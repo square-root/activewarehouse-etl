@@ -42,6 +42,7 @@ module ETL #:nodoc:
         def migration_1 #:nodoc:
           connection.create_table :jobs do |t|
             t.column :control_file, :string, :null => false
+            t.column :file_name, :string
             t.column :created_at, :datetime, :null => false
             t.column :completed_at, :datetime
             t.column :status, :string

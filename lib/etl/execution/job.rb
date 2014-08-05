@@ -3,7 +3,8 @@ module ETL #:nodoc:
     # Persistent class representing an ETL job
     class Job < Base
       belongs_to :batch
-      attr_accessible :control_file, :status, :batch_id
+      # file_name column to stores source file
+      attr_accessible :control_file, :file_name, :status, :batch_id
     end
   end
 end
