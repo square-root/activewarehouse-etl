@@ -571,7 +571,8 @@ module ETL #:nodoc:
         screens[type].each do |block|
           begin
             block.call
-          rescue => e
+              # Assert errors do not derive from StandardError class, so miss out here
+          rescue Exception => e
             case type
             when :fatal
               raise FatalScreenError, e
