@@ -20,6 +20,8 @@ module ETL #:nodoc:
             # compute the index of occurrence of this specific occurrence of the field (usually, will be 1)
             occurrence_index = fields[0..index].find_all { |e| e == field }.size
             number_of_occurrences = fields.find_all { |e| e == field }.size
+            field = field ? field : '' # Fixed error when field is nil
+
             new_field = field + (number_of_occurrences > 1 ? "_#{occurrence_index}" : "")
             new_fields << Field.new(new_field.to_sym)
           end
