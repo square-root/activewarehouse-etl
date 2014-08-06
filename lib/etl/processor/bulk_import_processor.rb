@@ -29,6 +29,8 @@ module ETL #:nodoc:
       attr_accessor :replace
       # To ignore top n lines of csv file like headers or test data
       attr_accessor :ignore
+      # To enable infile flag in Load Local sql query
+      attr_accessor :local_infile
        
       # Initialize the processor.
       #
@@ -58,6 +60,7 @@ module ETL #:nodoc:
         @field_enclosure = configuration[:field_enclosure]
         @disable_keys = configuration[:disable_keys] || false
         @replace = configuration[:replace] || false
+        @local_infile = configuration[:local_infile] || false
         @ignore = configuration[:ignore] || nil
 
         raise ControlError, "Target must be specified" unless @target
@@ -77,6 +80,7 @@ module ETL #:nodoc:
           
           options[:disable_keys] = true if disable_keys
           options[:replace] = true if replace
+          options[:local_infile] = local_infile
           options[:ignore] = ignore if ignore
           
           if field_separator || field_enclosure || line_separator || null_string
