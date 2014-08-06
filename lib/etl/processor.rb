@@ -8,4 +8,5 @@ end
 
 require 'etl/processor/processor'
 require 'etl/processor/row_processor'
+require 'etl/processor/sql_processor'
 Dir[File.dirname(__FILE__) + "/processor/*.rb"].each { |file| require(file) }
