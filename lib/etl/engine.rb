@@ -298,7 +298,8 @@ module ETL #:nodoc:
       )
       
       batch.execute
-      
+
+      ETL::Engine.batch.csv_config = ENV['CONFIG_FILE'].split(File::SEPARATOR).last.split('.').first.upcase
       ETL::Engine.batch.completed_at = Time.now
       ETL::Engine.batch.status = (errors.length > 0 ? 'completed with errors' : 'completed')
       ETL::Engine.batch.save!
