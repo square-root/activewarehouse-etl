@@ -38,6 +38,7 @@ module ETL #:nodoc:
           require 'etl/execution'
           ETL::Execution::Base.establish_connection :etl_execution
           ETL::Execution::Execution.migrate
+          ETL::Engine.exit_code = 0
 
           @initialized = true
         end
@@ -136,6 +137,9 @@ module ETL #:nodoc:
       
       # Accessor for the average rows per second processed
       attr_accessor :average_rows_per_second
+
+      # Set to true to change status based on exit_code
+      attr_accessor :fail_safe
       
       # Get a named connection
       def connection(name)
@@ -301,6 +305,7 @@ module ETL #:nodoc:
       
       ETL::Engine.batch.completed_at = Time.now
       ETL::Engine.batch.status = (errors.length > 0 ? 'completed with errors' : 'completed')
+      ETL::Engine.batch.status = "failed=#{ETL::Engine.exit_code}" unless persist_fail_safe
       ETL::Engine.batch.save!
     end
     
@@ -505,6 +510,7 @@ module ETL #:nodoc:
       ActiveRecord::Base.verify_active_connections!
       ETL::Engine.job.completed_at = Time.now
       ETL::Engine.job.status = (errors.length > 0 ? 'completed with errors' : 'completed')
+      ETL::Engine.job.status = "failed=#{ETL::Engine.exit_code}" unless persist_fail_safe
       ETL::Engine.job.save!
     end
     
@@ -523,7 +529,12 @@ module ETL #:nodoc:
     def pre_process(control)
       Engine.logger.debug "Pre-processing #{control.file}"
       control.pre_processors.each do |processor|
-        processor.process
+        begin
+          processor.process if persist_fail_safe
+        rescue => e
+          Engine.logger.error "Fatal Error during pre-processing: #{e.message} \n #{e.backtrace}"
+          ETL::Engine.exit_code = 3
+        end
       end
       Engine.logger.debug "Pre-processing complete"
     end
@@ -533,10 +544,14 @@ module ETL #:nodoc:
       say_on_own_line "Executing post processes"
       Engine.logger.debug "Post-processing #{control.file}"
       control.post_processors.each do |processor|
-        processor.process
+        begin
+          processor.process if persist_fail_safe
+        rescue => e
+          Engine.logger.error "Fatal Error during post-processing: #{e.message} \n #{e.backtrace}"
+          ETL::Engine.exit_code = 3
+        end
       end
       Engine.logger.debug "Post-processing complete"
-      say "Post-processing complete"
     end
     
     # Execute all dependencies
@@ -584,6 +599,10 @@ module ETL #:nodoc:
           end
         end
       end
+    end
+
+    def persist_fail_safe
+      !(ETL::Engine.exit_code!=0 && ETL::Engine.fail_safe)
     end
   end
 end

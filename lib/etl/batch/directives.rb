@@ -38,6 +38,10 @@ module ETL #:nodoc:
       # Execute the process
       def do_execute
         current_batch = ETL::Engine.batch
+        if ETL::Engine.exit_code!=0 && ETL::Engine.fail_safe
+          ETL::Engine.logger.debug "Etl ExitCode was not success from last Control Process, skipping #{file} process"
+          return 
+        end
         batch.engine.process(file)
 
         job = ETL::Engine.batch
