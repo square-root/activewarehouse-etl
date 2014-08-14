@@ -29,6 +29,10 @@ module ETL #:nodoc:
       def use_temp_tables(value=true)
         batch.use_temp_tables(value)
       end
+
+      def set_display_name(displayName=nil)
+        batch.set_display_name(displayName)
+      end
       
     end
     class Batch
@@ -82,7 +86,11 @@ module ETL #:nodoc:
       def use_temp_tables(value = true)
         directives << UseTempTables.new(self)
       end
-      
+
+      def set_display_name(displayName=nil)
+        directives << SetDisplayName.new(self, displayName)
+      end
+
       def execute
         engine.say "Executing batch"
         before_execute
