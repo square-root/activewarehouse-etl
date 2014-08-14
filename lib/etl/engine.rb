@@ -305,7 +305,7 @@ module ETL #:nodoc:
       
       ETL::Engine.batch.completed_at = Time.now
       ETL::Engine.batch.status = (errors.length > 0 ? 'completed with errors' : 'completed')
-      ETL::Engine.batch.status = "failed=#{ETL::Engine.exit_code}" unless persist_fail_safe
+      ETL::Engine.batch.status = "failed" unless persist_fail_safe
       ETL::Engine.batch.save!
     end
     
@@ -510,7 +510,7 @@ module ETL #:nodoc:
       ActiveRecord::Base.verify_active_connections!
       ETL::Engine.job.completed_at = Time.now
       ETL::Engine.job.status = (errors.length > 0 ? 'completed with errors' : 'completed')
-      ETL::Engine.job.status = "failed=#{ETL::Engine.exit_code}" unless persist_fail_safe
+      ETL::Engine.job.status = "failed" unless persist_fail_safe
       ETL::Engine.job.save!
     end
     
