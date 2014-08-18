@@ -74,6 +74,7 @@ module ETL #:nodoc:
         
         def migration_4
           connection.drop_table :records
+          connection.add_column :batches, :display_name, :string
         end
 
         def migration_5

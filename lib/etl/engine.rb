@@ -298,7 +298,7 @@ module ETL #:nodoc:
       )
       
       batch.execute
-      
+
       ETL::Engine.batch.completed_at = Time.now
       ETL::Engine.batch.status = (errors.length > 0 ? 'completed with errors' : 'completed')
       ETL::Engine.batch.save!
