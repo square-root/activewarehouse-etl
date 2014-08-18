@@ -140,7 +140,7 @@ module ETL #:nodoc:
       attr_accessor :average_rows_per_second
 
       # The fail_safe param forces a exit_code value check before processing control. 
-      # It also alter the batch and job process status based on current value of 
+      # It also alters the batch and job process status based on current value of 
       # Engine.exit_code. Default value is false
       attr_accessor :fail_safe
       
@@ -539,7 +539,11 @@ module ETL #:nodoc:
       Engine.logger.debug "Pre-processing #{control.file}"
       control.pre_processors.each do |processor|
         begin
-          processor.process if persist_fail_safe
+          unless persist_fail_safe
+            Engine.logger "Skipping #{processor.class} Post Process for error in previous processor "
+            next
+          end
+          processor.process
         rescue => e
           Engine.logger.error "Fatal Error during pre-processing: #{e.message} \n #{e.backtrace}"
           ETL::Engine.exit_code = 3
@@ -554,7 +558,11 @@ module ETL #:nodoc:
       Engine.logger.debug "Post-processing #{control.file}"
       control.post_processors.each do |processor|
         begin
-          processor.process if persist_fail_safe
+          unless persist_fail_safe
+            Engine.logger "Skipping #{processor.class} Post Process for error in previous processor "
+            next
+          end
+          processor.process
         rescue => e
           Engine.logger.error "Fatal Error during post-processing: #{e.message} \n #{e.backtrace}"
           ETL::Engine.exit_code = 3
