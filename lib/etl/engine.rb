@@ -26,6 +26,7 @@ module ETL #:nodoc:
           @skip_bulk_import = options[:skip_bulk_import]
           @read_locally = options[:read_locally]
           @rails_root = options[:rails_root]
+          @fail_safe = options[:fail_safe] || false
           
           require File.join(@rails_root, 'config/environment') if @rails_root
           options[:config] ||= 'database.yml'
@@ -138,7 +139,9 @@ module ETL #:nodoc:
       # Accessor for the average rows per second processed
       attr_accessor :average_rows_per_second
 
-      # Set to true to change status based on exit_code
+      # The fail_safe param forces a exit_code value check before processing control. 
+      # It also alter the batch and job process status based on current value of 
+      # Engine.exit_code. Default value is false
       attr_accessor :fail_safe
       
       # Get a named connection
