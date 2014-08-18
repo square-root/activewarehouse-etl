@@ -7,6 +7,8 @@ module ETL
       # Perfomrms SqlProcessor task from erb templates
       # source:        Collects empty hash, appends list of sql queires SqlProcessor executes
       # options:       Hash containing variable that will be used in template
+      ## file:
+      ## template_file
       # source_type:   Filter for hwat is send on source, sql path || sql query
       # logger:        For log results and output
       # db_connection: Database connection to be used
@@ -19,8 +21,8 @@ module ETL
 
       def process
       @options['files'].each do |file|
-        qry_hash = {"#{File.basename(file,".erb")}".sub('olap_table',
-                    @options['production_table']) => ERB.new(IO.read(file)).result(binding)}
+        qry_hash = {"#{File.basename(file,".erb")}".sub('template_file',
+                    @options['template_file']) => ERB.new(IO.read(file)).result(binding)}
         @source = @source.merge(qry_hash)
       end unless @options['files'].empty?
       super

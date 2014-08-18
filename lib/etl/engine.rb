@@ -26,6 +26,7 @@ module ETL #:nodoc:
           @skip_bulk_import = options[:skip_bulk_import]
           @read_locally = options[:read_locally]
           @rails_root = options[:rails_root]
+          @fail_safe = options[:fail_safe] || false
           
           require File.join(@rails_root, 'config/environment') if @rails_root
           options[:config] ||= 'database.yml'
@@ -38,6 +39,7 @@ module ETL #:nodoc:
           require 'etl/execution'
           ETL::Execution::Base.establish_connection :etl_execution
           ETL::Execution::Execution.migrate
+          ETL::Engine.exit_code = 0
 
           @initialized = true
         end
@@ -136,6 +138,11 @@ module ETL #:nodoc:
       
       # Accessor for the average rows per second processed
       attr_accessor :average_rows_per_second
+
+      # The fail_safe param forces a exit_code value check before processing control. 
+      # It also alters the batch and job process status based on current value of 
+      # Engine.exit_code. Default value is false
+      attr_accessor :fail_safe
       
       # Get a named connection
       def connection(name)
@@ -297,10 +304,17 @@ module ETL #:nodoc:
         :status => 'executing'
       )
       
-      batch.execute
-
+      begin
+        batch.execute
+      rescue => e
+        Engine.logger.error "An exception occured while processing #{batch.file} file, Exiting process..."
+        Engine.logger.info "Error Message #{e.message}, Stack-trace: #{e.backtrace}"
+        Engine::exit_code = 3
+      end
+      
       ETL::Engine.batch.completed_at = Time.now
       ETL::Engine.batch.status = (errors.length > 0 ? 'completed with errors' : 'completed')
+      ETL::Engine.batch.status = "failed" unless persist_fail_safe
       ETL::Engine.batch.save!
     end
     
@@ -505,6 +519,7 @@ module ETL #:nodoc:
       ActiveRecord::Base.verify_active_connections!
       ETL::Engine.job.completed_at = Time.now
       ETL::Engine.job.status = (errors.length > 0 ? 'completed with errors' : 'completed')
+      ETL::Engine.job.status = "failed" unless persist_fail_safe
       ETL::Engine.job.save!
     end
     
@@ -523,7 +538,16 @@ module ETL #:nodoc:
     def pre_process(control)
       Engine.logger.debug "Pre-processing #{control.file}"
       control.pre_processors.each do |processor|
-        processor.process
+        begin
+          unless persist_fail_safe
+            Engine.logger "Skipping #{processor.class} Post Process for error in previous processor "
+            next
+          end
+          processor.process
+        rescue => e
+          Engine.logger.error "Fatal Error during pre-processing: #{e.message} \n #{e.backtrace}"
+          ETL::Engine.exit_code = 3
+        end
       end
       Engine.logger.debug "Pre-processing complete"
     end
@@ -533,10 +557,18 @@ module ETL #:nodoc:
       say_on_own_line "Executing post processes"
       Engine.logger.debug "Post-processing #{control.file}"
       control.post_processors.each do |processor|
-        processor.process
+        begin
+          unless persist_fail_safe
+            Engine.logger "Skipping #{processor.class} Post Process for error in previous processor "
+            next
+          end
+          processor.process
+        rescue => e
+          Engine.logger.error "Fatal Error during post-processing: #{e.message} \n #{e.backtrace}"
+          ETL::Engine.exit_code = 3
+        end
       end
       Engine.logger.debug "Post-processing complete"
-      say "Post-processing complete"
     end
     
     # Execute all dependencies
@@ -584,6 +616,10 @@ module ETL #:nodoc:
           end
         end
       end
+    end
+
+    def persist_fail_safe
+      !(ETL::Engine.exit_code!=0 && ETL::Engine.fail_safe)
     end
   end
 end

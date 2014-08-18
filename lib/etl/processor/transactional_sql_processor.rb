@@ -20,6 +20,7 @@ module ETL
         rescue => e
           @logger.error 'Rolling Back db Transaction'
           @db_connection.rollback_db_transaction()
+          raise e, e.message
         end
       end      
     end
