@@ -64,6 +64,21 @@ module ETL #:nodoc:
       def do_execute
         ETL::Engine.use_temp_tables = true
       end
-    end 
+    end
+
+    class SetDisplayName < Directive
+      attr_reader :displayName
+
+      def initialize(batch, displayName)
+        super(batch)
+        @displayName = displayName
+      end
+
+      protected
+      def do_execute
+        current_batch = ETL::Engine.batch
+        current_batch.display_name = displayName
+      end
+    end
   end
 end
