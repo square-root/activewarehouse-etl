@@ -301,8 +301,14 @@ module ETL #:nodoc:
         :status => 'executing'
       )
       
-      batch.execute
-
+      begin
+        batch.execute
+      rescue => e
+        Engine.logger.error "An exception occured while processing #{batch.file} file, Exiting process..."
+        Engine.logger.info "Error Message #{e.message}, Stack-trace: #{e.backtrace}"
+        Engine::exit_code = 3
+      end
+      
       ETL::Engine.batch.completed_at = Time.now
       ETL::Engine.batch.status = (errors.length > 0 ? 'completed with errors' : 'completed')
       ETL::Engine.batch.status = "failed" unless persist_fail_safe
