@@ -12,7 +12,7 @@ module ETL
 
       def post_result_processor(file_name, result)
         unless result.first[0]==0
-          @logger.warn "Asserting Test Fails for #{file_name} value:(#{result.first[0]})"
+          @logger.error "Asserting Test Fails for #{file_name} value:(#{result.first[0]})"
           @status = 'Fail'
           ETL::Engine.exit_code = 1
         end
